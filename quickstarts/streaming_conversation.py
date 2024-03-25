@@ -3,6 +3,7 @@ import logging
 import signal
 from dotenv import load_dotenv
 
+from vocode.streaming.agent.groq_agent import ChatGroqAgent
 
 load_dotenv()
 
@@ -40,8 +41,8 @@ async def main():
                 endpointing_config=PunctuationEndpointingConfig(),
             )
         ),
-        agent=ChatGPTAgent(
-            ChatGPTAgentConfig(
+        agent=ChatGroqAgent(
+            ChatGroqAgentConfig(
                 initial_message=BaseMessage(text="What up"),
                 prompt_preamble="""The AI is having a pleasant conversation about life""",
             )

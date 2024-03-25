@@ -6,7 +6,7 @@ from pyngrok import ngrok
 from vocode.streaming.telephony.config_manager.redis_config_manager import (
     RedisConfigManager,
 )
-from vocode.streaming.models.agent import ChatGPTAgentConfig
+from vocode.streaming.models.agent import ChatGroqAgentConfig
 from vocode.streaming.models.message import BaseMessage
 from vocode.streaming.telephony.server.base import (
     TwilioInboundCallConfig,
@@ -51,7 +51,7 @@ telephony_server = TelephonyServer(
     inbound_call_configs=[
         TwilioInboundCallConfig(
             url="/inbound_call",
-            agent_config=ChatGPTAgentConfig(
+            agent_config=ChatGroqAgentConfig(
                 initial_message=BaseMessage(text="What up"),
                 prompt_preamble="Have a pleasant conversation about life",
                 generate_responses=True,
