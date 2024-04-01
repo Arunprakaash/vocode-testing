@@ -10,7 +10,6 @@ import typing
 from typing import Any, Awaitable, Callable, Generic, Optional, Tuple, TypeVar
 
 import numpy as np
-import torch
 
 from vocode.streaming.action.worker import ActionsWorker
 from vocode.streaming.agent.base_agent import (
@@ -26,7 +25,7 @@ from vocode.streaming.agent.bot_sentiment_analyser import (
     BotSentimentAnalyser,
 )
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
-from vocode.streaming.audio_utils import int2float
+# from vocode.streaming.audio_utils import int2float
 from vocode.streaming.constants import (
     TEXT_TO_SPEECH_CHUNK_SIZE_SECONDS,
     PER_CHUNK_ALLOWANCE_SECONDS,
@@ -57,6 +56,7 @@ from vocode.streaming.transcriber.base_transcriber import (
 from vocode.streaming.utils import create_conversation_id, get_chunk_size_per_second
 from vocode.streaming.utils.conversation_logger_adapter import wrap_logger
 from vocode.streaming.utils.events_manager import EventsManager
+from vocode.streaming.utils.mp3_helper import decode_mp3
 from vocode.streaming.utils.state_manager import ConversationStateManager
 from vocode.streaming.utils.worker import (
     AsyncQueueWorker,
@@ -65,7 +65,7 @@ from vocode.streaming.utils.worker import (
     InterruptibleEventFactory,
     InterruptibleAgentResponseEvent,
 )
-from vocode.streaming.vad_utils import CustomVADIterator, model
+# from vocode.streaming.vad_utils import CustomVADIterator, model
 
 OutputDeviceType = TypeVar("OutputDeviceType", bound=BaseOutputDevice)
 
@@ -192,7 +192,21 @@ class StreamingConversation(Generic[OutputDeviceType]):
             try:
                 filler_audio = item.payload
                 assert self.conversation.filler_audio_config is not None
-                filler_synthesis_result = filler_audio.create_synthesis_result()
+                output_bytes_io = decode_mp3(filler_audio.audio_data)
+                chunk_size = (
+                        get_chunk_size_per_second(
+                            filler_audio.synthesizer_config.audio_encoding,
+                            filler_audio.synthesizer_config.sampling_rate,
+                        )
+                        * filler_audio.seconds_per_chunk
+                )
+                filler_synthesis_result = BaseSynthesizer.create_synthesis_result_from_wav(
+                    synthesizer_config=filler_audio.synthesizer_config,
+                    file=output_bytes_io,
+                    message=filler_audio.message,
+                    chunk_size=chunk_size,
+                )
+                # filler_synthesis_result = filler_audio.create_synthesis_result()
                 self.current_filler_seconds_per_chunk = filler_audio.seconds_per_chunk
                 silence_threshold = (
                     self.conversation.filler_audio_config.silence_threshold_seconds
@@ -343,24 +357,24 @@ class StreamingConversation(Generic[OutputDeviceType]):
                 )
                 item.agent_response_tracker.set()
                 self.conversation.logger.debug("Message sent: {}".format(message_sent))
-                if cut_off:
-                    self.conversation.agent.update_last_bot_message_on_cut_off(
-                        message_sent
-                    )
-                if self.conversation.agent.agent_config.end_conversation_on_goodbye:
-                    goodbye_detected_task = (
-                        self.conversation.agent.create_goodbye_detection_task(
-                            message_sent
-                        )
-                    )
-                    try:
-                        if await asyncio.wait_for(goodbye_detected_task, 0.1):
-                            self.conversation.logger.debug(
-                                "Agent said goodbye, ending call"
-                            )
-                            await self.conversation.terminate()
-                    except asyncio.TimeoutError:
-                        pass
+                # if cut_off:
+                #     self.conversation.agent.update_last_bot_message_on_cut_off(
+                #         message_sent
+                #     )
+                # if self.conversation.agent.agent_config.end_conversation_on_goodbye:
+                #     goodbye_detected_task = (
+                #         self.conversation.agent.create_goodbye_detection_task(
+                #             message_sent
+                #         )
+                #     )
+                #     try:
+                #         if await asyncio.wait_for(goodbye_detected_task, 0.1):
+                #             self.conversation.logger.debug(
+                #                 "Agent said goodbye, ending call"
+                #             )
+                #             await self.conversation.terminate()
+                #     except asyncio.TimeoutError:
+                #         pass
             except asyncio.CancelledError:
                 pass
 
@@ -460,8 +474,8 @@ class StreamingConversation(Generic[OutputDeviceType]):
         self.end_time: Optional[float] = None
 
         # vad
-        self.vad_iterator = CustomVADIterator(model=model, threshold=0.7, sampling_rate=8000,
-                                              min_silence_duration_ms=500, speech_pad_ms=30)
+        # self.vad_iterator = CustomVADIterator(model=model, threshold=0.7, sampling_rate=8000,
+        #                                       min_silence_duration_ms=500, speech_pad_ms=30)
 
     def create_state_manager(self) -> ConversationStateManager:
         return ConversationStateManager(conversation=self)
