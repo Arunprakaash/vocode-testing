@@ -200,6 +200,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
                 while not self._ended:
                     try:
                         msg = await ws.recv()
+                        print(msg)
                     except Exception as e:
                         self.logger.debug(f"Got error {e} in Deepgram receiver")
                         break
@@ -238,6 +239,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
                         num_buffer_utterances += 1
 
                     if speech_final:
+                        print(top_choice)
                         self.output_queue.put_nowait(
                             Transcription(
                                 message=buffer,
@@ -250,6 +252,7 @@ class DeepgramTranscriber(BaseAsyncTranscriber[DeepgramTranscriberConfig]):
                         num_buffer_utterances = 1
                         time_silent = 0
                     elif top_choice["transcript"] and confidence > 0.0:
+                        print(top_choice)
                         self.output_queue.put_nowait(
                             Transcription(
                                 message=buffer,

@@ -116,6 +116,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
             self.interruptible_event_factory = interruptible_event_factory
 
         async def process(self, transcription: Transcription):
+            print(f"live transcription: {transcription.message}")
             self.conversation.mark_last_action_timestamp()
             if transcription.message.strip() == "":
                 self.conversation.logger.info("Ignoring empty transcription")
@@ -126,10 +127,11 @@ class StreamingConversation(Generic[OutputDeviceType]):
                         transcription.message, transcription.confidence
                     )
                 )
-            if (
-                    not self.conversation.is_human_speaking
+                # Interruption handling
+            if self.conversation.speaking:
+                self.conversation.speaking = False
+                    # not self.conversation.is_human_speaking
                     # and self.conversation.is_interrupt(transcription)
-            ):
                 self.conversation.current_transcription_is_interrupt = (
                     self.conversation.broadcast_interrupt()
                 )
@@ -142,6 +144,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
             )
             self.conversation.is_human_speaking = not transcription.is_final
             if transcription.is_final:
+                self.conversation.speaking = True
                 # we use getattr here to avoid the dependency cycle between VonageCall and StreamingConversation
                 event = self.interruptible_event_factory.create_interruptible_event(
                     TranscriptionAgentInput(
@@ -394,6 +397,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
             logger or logging.getLogger(__name__),
             conversation_id=self.id,
         )
+        self.speaking = False
         self.output_device = output_device
         self.transcriber = transcriber
         self.agent = agent
