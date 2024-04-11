@@ -18,7 +18,7 @@ from vocode.streaming.models.transcriber import DeepgramTranscriberConfig, Punct
 
 
 from speller_agent import SpellerAgentFactory
-
+from vocode.streaming.transcriber import TimeEndpointingConfig
 # if running from python, this will load the local .env
 # docker-compose will load the .env file by itself
 from dotenv import load_dotenv
