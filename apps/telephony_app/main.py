@@ -24,7 +24,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(docs_url=None)
-
+import nltk
+nltk.download('punkt')
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
