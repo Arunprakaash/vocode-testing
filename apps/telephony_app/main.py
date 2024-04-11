@@ -56,6 +56,16 @@ synthesizer_config = ElevenLabsSynthesizerConfig(
     experimental_streaming=True
 )
 
+transcriber_config = DeepgramTranscriberConfig(
+                language="en-IN",
+                sampling_rate=8000,
+                model="nova-2",
+                audio_encoding=AudioEncoding.MULAW,
+                chunk_size=4000,
+                endpointing_config=TimeEndpointingConfig(),
+
+)
+
 telephony_server = TelephonyServer(
     base_url=BASE_URL,
     config_manager=config_manager,
@@ -87,6 +97,7 @@ Avoid sounding mechanical or artificial; strive for a natural, day-to-day conver
 
             ),
             synthesizer_config=synthesizer_config,
+            transcriber_config=transcriber_config,
             twilio_config=TwilioConfig(
                 account_sid=os.environ["TWILIO_ACCOUNT_SID"],
                 auth_token=os.environ["TWILIO_AUTH_TOKEN"],
