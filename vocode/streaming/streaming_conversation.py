@@ -128,7 +128,7 @@ class StreamingConversation(Generic[OutputDeviceType]):
                     )
                 )
                 # Interruption handling
-            if self.conversation.speaking:
+            if not self.conversation.is_human_speaking:
                 self.conversation.speaking = False
                     # not self.conversation.is_human_speaking
                     # and self.conversation.is_interrupt(transcription)
