@@ -1,16 +1,16 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from pydantic import validator
-from vocode.streaming.models.client_backend import OutputAudioConfig
 
+from vocode.streaming.models.client_backend import OutputAudioConfig
 from vocode.streaming.output_device.base_output_device import BaseOutputDevice
 from vocode.streaming.telephony.constants import (
     DEFAULT_AUDIO_ENCODING,
     DEFAULT_SAMPLING_RATE,
 )
-from .model import BaseModel, TypedModel
 from .audio_encoding import AudioEncoding
+from .model import BaseModel, TypedModel
 
 
 class SynthesizerType(str, Enum):
@@ -26,6 +26,8 @@ class SynthesizerType(str, Enum):
     COQUI = "synthesizer_coqui"
     BARK = "synthesizer_bark"
     POLLY = "synthesizer_polly"
+    # deepgram synthesizer
+    DEEPGRAM = "synthesizer_deepgram"
 
 
 class SentimentConfig(BaseModel):
@@ -128,10 +130,59 @@ class ElevenLabsSynthesizerConfig(
     @validator("optimize_streaming_latency")
     def optimize_streaming_latency_check(cls, optimize_streaming_latency):
         if optimize_streaming_latency is not None and not (
-            0 <= optimize_streaming_latency <= 4
+                0 <= optimize_streaming_latency <= 4
         ):
             raise ValueError("optimize_streaming_latency must be between 0 and 4.")
         return optimize_streaming_latency
+
+
+DEEPGRAM_DEFAULT_VOICE = "aura-luna-en"
+
+
+class DeepgramSynthesizerConfig(
+    SynthesizerConfig, type=SynthesizerType.DEEPGRAM.value
+):
+    api_key: Optional[str] = None
+    voice: Optional[str] = DEEPGRAM_DEFAULT_VOICE
+    encoding: Optional[str]
+    bitrate: Optional[int]
+    container: Optional[str]
+    sampling_rate: Optional[int]
+
+    @validator("voice")
+    def set_default_voice(cls, v):
+        return v or DEEPGRAM_DEFAULT_VOICE
+
+    @validator("encoding")
+    def validate_encoding(cls, v):
+        valid_encodings = ["linear16", "mulaw", "alaw", "mp3", "opus", "flac", "aac"]
+        if v not in valid_encodings:
+            raise ValueError(f"Invalid encoding: {v}. Valid encodings are {valid_encodings}.")
+        return v
+
+    @validator("container")
+    def validate_container(cls, v):
+        valid_containers = ["wav", "ogg"]
+        if v not in valid_containers:
+            raise ValueError(f"Invalid container: {v}. Valid containers are {valid_containers}.")
+        return v
+
+    @validator("sampling_rate")
+    def validate_sampling_rate(cls, v):
+        if v not in [8000, 16000, 22050, 24000, 32000, 48000]:
+            raise ValueError("Invalid sampling rate. Must be one of: 8000, 16000, 22050, 24000, 32000, 48000.")
+        return v
+
+    @validator("bitrate")
+    def validate_bitrate(cls, v, values):
+        encoding = values.get("encoding")
+        if encoding == "mp3" and v not in [32000, 48000]:
+            raise ValueError(f"Invalid bitrate for MP3 encoding: {v}. Must be one of: 32000, 48000.")
+        if encoding == "opus" and (v < 4000 or v > 650000):
+            raise ValueError("Invalid bitrate for Opus encoding. Must be between 4000 and 650000.")
+        if encoding == "aac" and (v < 4000 or v > 192000):
+            raise ValueError("Invalid bitrate for AAC encoding. Must be between 4000 and 192000.")
+        return v
 
 
 RIME_DEFAULT_SPEAKER = "young_male_unmarked-1"

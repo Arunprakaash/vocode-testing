@@ -26,7 +26,6 @@ from vocode.streaming.agent.bot_sentiment_analyser import (
     BotSentimentAnalyser,
 )
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
-from vocode.streaming.audio_utils import int2float
 from vocode.streaming.constants import (
     TEXT_TO_SPEECH_CHUNK_SIZE_SECONDS,
     PER_CHUNK_ALLOWANCE_SECONDS,
@@ -65,7 +64,6 @@ from vocode.streaming.utils.worker import (
     InterruptibleEventFactory,
     InterruptibleAgentResponseEvent,
 )
-from vocode.streaming.vad_utils import CustomVADIterator, model
 
 OutputDeviceType = TypeVar("OutputDeviceType", bound=BaseOutputDevice)
 
@@ -561,17 +559,6 @@ class StreamingConversation(Generic[OutputDeviceType]):
         self.transcriptions_worker.consume_nonblocking(transcription)
 
     def receive_audio(self, chunk: bytes):
-        # audio_np = np.frombuffer(chunk, dtype=np.int16)
-        # audio_float32 = int2float(audio_np)
-        # speech_detection = self.vad_iterator(
-        #     torch.from_numpy(audio_float32), return_seconds=True)
-        # if speech_detection is not None:
-        #     if 'start' in speech_detection:
-        #         self.logger.info("Speech started at: %s", speech_detection['start'])
-        #         self.broadcast_interrupt()
-        #     elif 'end' in speech_detection:
-        #         self.logger.info("Speech ended at: %s", speech_detection['end'])
-        #         self.vad_iterator.reset_states()
         self.transcriber.send_audio(chunk)
 
     def warmup_synthesizer(self):
