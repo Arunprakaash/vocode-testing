@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Any, Dict, Optional
-from vocode.streaming.models.audio_encoding import AudioEncoding
-from vocode.streaming.models.model import BaseModel, TypedModel
+
 from vocode.streaming.models.agent import AgentConfig
+from vocode.streaming.models.model import BaseModel, TypedModel
 from vocode.streaming.models.synthesizer import (
     AzureSynthesizerConfig,
     SynthesizerConfig,
@@ -25,6 +25,13 @@ from vocode.streaming.telephony.constants import (
 class TwilioConfig(BaseModel):
     account_sid: str
     auth_token: str
+    record: bool = False
+    extra_params: Optional[Dict[str, Any]] = {}
+
+
+# TODO: telnyx config
+class TelnyxConfig(BaseModel):
+    api_key: str
     record: bool = False
     extra_params: Optional[Dict[str, Any]] = {}
 
@@ -58,6 +65,7 @@ class EndOutboundCall(BaseModel):
     call_id: str
     vonage_config: Optional[VonageConfig] = None
     twilio_config: Optional[TwilioConfig] = None
+    telnyx_config: Optional[TelnyxConfig] = None
 
 
 class CreateOutboundCall(BaseModel):
@@ -69,6 +77,7 @@ class CreateOutboundCall(BaseModel):
     conversation_id: Optional[str] = None
     vonage_config: Optional[VonageConfig] = None
     twilio_config: Optional[TwilioConfig] = None
+    telnyx_config: Optional[TelnyxConfig] = None
     # TODO add IVR/etc.
 
 
@@ -82,13 +91,13 @@ class DialIntoZoomCall(BaseModel):
     synthesizer_config: Optional[SynthesizerConfig] = None
     conversation_id: Optional[str] = None
     vonage_config: Optional[VonageConfig] = None
-    twilio_config: Optional[TwilioConfig] = None
 
 
 class CallConfigType(str, Enum):
     BASE = "call_config_base"
     TWILIO = "call_config_twilio"
     VONAGE = "call_config_vonage"
+    TELNYX = "call_config_telnyx"
 
 
 class BaseCallConfig(TypedModel, type=CallConfigType.BASE.value):
@@ -151,4 +160,28 @@ class VonageCallConfig(BaseCallConfig, type=CallConfigType.VONAGE.value):
         return AzureSynthesizerConfig(
             sampling_rate=VONAGE_SAMPLING_RATE,
             audio_encoding=VONAGE_AUDIO_ENCODING,
+        )
+
+
+# TODO: implement
+class TelnyxCallConfig(BaseCallConfig, type=CallConfigType.TELNYX.value):
+    telnyx_config: TelnyxConfig
+    telnyx_call_id: str
+
+    @staticmethod
+    def default_transcriber_config():
+        return DeepgramTranscriberConfig(
+            sampling_rate=DEFAULT_SAMPLING_RATE,
+            audio_encoding=DEFAULT_AUDIO_ENCODING,
+            chunk_size=DEFAULT_CHUNK_SIZE,
+            model="phonecall",
+            tier="nova",
+            endpointing_config=PunctuationEndpointingConfig(),
+        )
+
+    @staticmethod
+    def default_synthesizer_config():
+        return AzureSynthesizerConfig(
+            sampling_rate=DEFAULT_SAMPLING_RATE,
+            audio_encoding=DEFAULT_AUDIO_ENCODING,
         )

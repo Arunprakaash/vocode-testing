@@ -21,6 +21,8 @@ AZURE_OPENAI_DEFAULT_API_TYPE = "azure"
 AZURE_OPENAI_DEFAULT_API_VERSION = "2023-03-15-preview"
 AZURE_OPENAI_DEFAULT_ENGINE = "gpt-35-turbo"
 CHAT_GROQ_DEFAULT_MODEL_NAME = "mixtral-8x7b-32768"
+CHAT_OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434/v1"
+CHAT_OLLAMA_AGENT_DEFAULT_MODEL_NAME = "llama2"
 
 
 class AgentType(str, Enum):
@@ -30,6 +32,7 @@ class AgentType(str, Enum):
     CHAT_GPT = "agent_chat_gpt"
     CHAT_ANTHROPIC = "agent_chat_anthropic"
     CHAT_GROQ = "agent_chat_groq"
+    CHAT_OLLAMA = "agent_chat_ollama"
     CHAT_VERTEX_AI = "agent_chat_vertex_ai"
     ECHO = "agent_echo"
     GPT4ALL = "agent_gpt4all"
@@ -111,6 +114,16 @@ class ChatGroqAgentConfig(AgentConfig, type=AgentType.CHAT_GROQ.value):
     model_name: str = CHAT_GROQ_DEFAULT_MODEL_NAME
     max_tokens_to_sample: int = 200
     generate_responses: bool = True
+
+
+class ChatOllamaAgentConfig(AgentConfig, type=AgentType.CHAT_OLLAMA.value):
+    prompt_preamble: str
+    expected_first_prompt: Optional[str] = None
+    model_name: str = CHAT_OLLAMA_AGENT_DEFAULT_MODEL_NAME
+    base_url: str = CHAT_OLLAMA_DEFAULT_BASE_URL
+    temperature: float = LLM_AGENT_DEFAULT_TEMPERATURE
+    max_tokens: int = LLM_AGENT_DEFAULT_MAX_TOKENS
+    cut_off_response: Optional[CutOffResponse] = None
 
 
 class ChatVertexAIAgentConfig(AgentConfig, type=AgentType.CHAT_VERTEX_AI.value):
